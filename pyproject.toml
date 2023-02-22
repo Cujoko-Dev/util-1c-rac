@@ -1,4 +1,8 @@
 [tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "-e file:///D:/Dev/Python/commons-1c#egg=commons-1c",
+]
 
 [project]
 authors = [
@@ -15,6 +19,7 @@ classifiers=[
     'Programming Language :: Python :: 3.9',
 ]
 dependencies = [
+    "commons-1c>=3.6.1",
     "pyyaml>=6.0",
 ]
 description = "Utils for 1C:Enterprise Remote Administration Client"

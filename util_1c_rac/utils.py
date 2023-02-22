@@ -40,4 +40,3 @@ def get_cluster_and_ib_name(connection_string):
     connection_string = connection_string.replace('Srvr="', '')
     cluster, ib_name = connection_string.split('Ref="')
     return cluster, ib_name
-

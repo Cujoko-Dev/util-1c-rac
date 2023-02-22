@@ -1,25 +1,39 @@
 import os
+import platform
+
+from commons_1c import platform_
 
 from . import utils
 
 
 class Cluster:
-    def __init__(self, cluster, all_settings):
+    def __init__(self, cluster_host: str = platform.node(), cluster_port: int = 1541, cluster_name=None,
+                 all_settings: dict = None):
         """Class to manage cluster infobase and cluster settings.
         Args:
-            cluster (str): cluster name
+            cluster_host (str): cluster host
+            cluster_port (int): cluster port
+            cluster_name (str): cluster name
             all_settings (dict) = dict with data from settings file
         """
-        settings = all_settings["variables"]['CLUSTERS'][cluster.upper()]
-        path = settings['path']
-        self.settings = all_settings
-        self.path = os.path.join(path, settings['version'], 'bin')
-        os.chdir(self.path)
-        self.server_name = settings['server_name']
-        self.ras_port = settings['ras_port']
+        if cluster_port and cluster_port:
+            self.cluster_host = cluster_host
+            self.cluster_port = cluster_port
+            self.path = platform_.get_last_rac_exe_file_fullpath()
+        elif cluster_name and all_settings:
+            settings = all_settings["variables"]['CLUSTERS'][cluster_name.upper()]
+            path = settings['path']
+            self.settings = all_settings
+            self.path = os.path.join(path, settings['version'], 'bin')
+            os.chdir(self.path)
+            self.server_name = settings['server_name']
+            self.ras_port = settings['ras_port']
+            self.infobases = self._get_list_of_infobases()
+            self.sql_server = settings['default_sql_server']
+        else:
+            raise AttributeError  # todo
+
         self._cluster_id = self._get_cluster_id()
-        self.infobases = self._get_list_of_infobases()
-        self.sql_server = settings['default_sql_server']
 
     def terminate_sessions(self, ib_name, session_number=''):
         """Terminate infobase sessions.
@@ -102,7 +116,18 @@ class Cluster:
         command = 'rac.exe cluster list'
         command = self._add_ras_host(command)
         output = utils.run_command('get cluster id:', command)
-        return self._process_output(output, '')[0]['cluster']
+
+        if self.cluster_host and self.cluster_port:
+            output_processed = self._process_output(output, '')
+
+            for output_processed_item in output_processed:
+                if output_processed_item['host'] == self.cluster_host \
+                        and output_processed_item['port'] == str(self.cluster_port):
+                    return output_processed_item['cluster']
+            else:
+                return None
+        else:
+            return self._process_output(output, '')[0]['cluster']
 
     def _set_option(self, ib_name, option, mode, username='', pwd=''):
         ib_id = self._get_infobase_id(ib_name)
