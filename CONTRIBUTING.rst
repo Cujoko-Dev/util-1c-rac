@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/qwedfgr/tools_1c/issues.
+Report bugs at https://github.com/Cujoko/util_1c_rac/issues.
 
 If you are reporting a bug, please include:
 
@@ -45,7 +45,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/qwedfgr/tools_1c/issues.
+The best way to send feedback is to file an issue at https://github.com/Cujoko/util_1c_rac/issues.
 
 If you are proposing a feature:
 
@@ -57,17 +57,17 @@ If you are proposing a feature:
 Get Started!
 ------------
 
-Ready to contribute? Here's how to set up `tools_1c` for local development.
+Ready to contribute? Here's how to set up `util-1c-rac` for local development.
 
-1. Fork the `tools_1c` repo on GitHub.
+1. Fork the `util-1c-rac` repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/tools_1c.git
+    $ git clone git@github.com:your_name_here/util-1c-rac.git
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv tools_1c
-    $ cd tools_1c/
+    $ mkvirtualenv util-1c-rac
+    $ cd util-1c-rac/
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -79,7 +79,7 @@ Ready to contribute? Here's how to set up `tools_1c` for local development.
 5. When you're done making changes, check that your changes pass flake8 and the
    tests, including testing other Python versions with tox::
 
-    $ flake8 tools_1c tests
+    $ flake8 util-1c-rac tests
     $ python setup.py test or pytest
     $ tox
 
@@ -112,7 +112,7 @@ Tips
 To run a subset of tests::
 
 
-    $ python -m unittest tests.test_tools_1c
+    $ python -m unittest tests.test_util_1c_rac
 
 Deploying
 ---------
