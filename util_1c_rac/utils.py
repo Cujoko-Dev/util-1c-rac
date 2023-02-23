@@ -22,16 +22,17 @@ def get_cluster_by_version(version):
             return cluster
 
 
-def run_command(description, command):
+def run_command(command: str, desc: str):
     try:
         proc = sub.Popen(command, stdout=sub.PIPE, stderr=sub.PIPE)
         outs, errs = proc.communicate()
         if errs:
-            raise ChildProcessError(f'Error {errs.decode("cp866")} when {description}')
+            raise ChildProcessError(f'Error {errs.decode("cp866")} when {desc}')
         else:
             output = outs.decode('cp866')
     except Exception as exc:
         raise exc
+
     return output.split('\r\n')
 
 

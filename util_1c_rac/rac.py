@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import platform
 
 from commons_1c import platform_
@@ -7,49 +7,123 @@ from . import utils
 
 
 class Cluster:
-    def __init__(self, cluster_host: str = platform.node(), cluster_port: int = 1541, cluster_name=None,
+    def __init__(self, host: str = platform.node(), port: int = 1541, name=None,
                  all_settings: dict = None):
         """Class to manage cluster infobase and cluster settings.
         Args:
-            cluster_host (str): cluster host
-            cluster_port (int): cluster port
-            cluster_name (str): cluster name
+            host (str): cluster host
+            port (int): cluster port
+            name (str): cluster name
             all_settings (dict) = dict with data from settings file
         """
-        if cluster_port and cluster_port:
-            self.cluster_host = cluster_host
-            self.cluster_port = cluster_port
-            self.path = platform_.get_last_rac_exe_file_fullpath()
-        elif cluster_name and all_settings:
-            settings = all_settings["variables"]['CLUSTERS'][cluster_name.upper()]
-            path = settings['path']
-            self.settings = all_settings
-            self.path = os.path.join(path, settings['version'], 'bin')
-            os.chdir(self.path)
-            self.server_name = settings['server_name']
+        if port and port:
+            self.host = host
+            self.port = port
+
+            self.ras_host = 'localhost'  # todo
+            self.ras_port = 1545  # todo
+
+            self.rac_path = platform_.get_last_rac_exe_file_fullpath()
+        elif name and all_settings:
+            self.all_settings = all_settings
+
+            settings = all_settings['variables']['CLUSTERS'][name.upper()]
+
+            self.ras_host = settings['host']
             self.ras_port = settings['ras_port']
-            self.infobases = self._get_list_of_infobases()
+
+            self.rac_path = Path(settings['path'], settings['version'], 'bin', 'rac.exe')
+
             self.sql_server = settings['default_sql_server']
         else:
             raise AttributeError  # todo
 
-        self._cluster_id = self._get_cluster_id()
+        self._cluster_id = None
+        self.host = None
+        self.port = None
 
-    def terminate_sessions(self, ib_name, session_number=''):
-        """Terminate infobase sessions.
+        output = self._run_command('cluster list', 'get list of clusters')
+        output_processed = self._process_output(output)
+
+        if len(output_processed) > 0:
+            output_processed_item = None
+
+            if self.host and self.port:
+                for output_processed_item in output_processed:
+                    if output_processed_item['host'] == self.host \
+                            and output_processed_item['port'] == str(self.port):
+                        break
+            else:
+                output_processed_item = output_processed[0]
+
+            if output_processed_item:
+                self._cluster_id = output_processed_item['cluster']
+                self.host = output_processed_item['host']
+                self.port = output_processed_item['port']
+
+        self.infobases = self._get_list_of_infobases()
+
+    def _run_command(self, command: str, desc: str):
+        commands = [f'"{self.rac_path}" {self.ras_host}:{self.ras_port}', command]
+
+        output = utils.run_command(' '.join(commands), desc)
+
+        return output
+
+    @staticmethod
+    def _process_output(output, separator=''):
+        objs = []
+
+        obj = None
+
+        for line in output:
+            if not line or obj is None:
+                if obj is not None and len(obj) == 0:
+                    continue  # Очередная пустая строка подряд
+
+                obj = {}
+                objs.append(obj)
+
+            line_splitted = line.split(':', maxsplit=1)
+
+            if len(line_splitted) >= 2:
+                key, value = [x.strip() for x in line_splitted]
+
+                obj[key] = value
+
+        if obj is not None and len(obj) == 0:
+            del objs[-1]
+
+        return objs
+
+    @staticmethod
+    def _check_value(value, valid_values):
+        """Checks the value for validity.
         Args:
-            ib_name (str): infobase name
-            session_number (str, int): session number, if not set, then all sessions terminate
+            value (str): value for check
+            valid_values (list): list of valid values
         """
-        sessions = self._get_sessions_list(ib_name)
-        for session in sessions:
-            if session['session-id'] == str(session_number) or not session_number:
-                command = f'rac session terminate --cluster={self._cluster_id} --session={session["session"]}'
-                command = self._add_ras_host(command)
-                try:
-                    utils.run_command('Terminate sessions:', command)
-                except Exception as e:
-                    print(f'failed to end session: {e}')
+        if value not in valid_values:
+            raise ValueError(f'Invalid value {value}. Available values: {valid_values}')
+
+    def _get_infobase_id(self, ib_name):
+        try:
+            ib_id = utils.get_value_by_key_in_dicts_list(ib_name, self.infobases)
+        except Exception:
+            raise KeyError(f'Could not find the infobase: "{ib_name}"')
+        return ib_id
+
+    def _get_list_of_infobases(self):
+        output = self._run_command(f'infobase --cluster={self._cluster_id} summary list', 'get list of infobases')
+        list_of_ib = self._process_output(output)
+
+        return [{i['name']: i['infobase']} for i in list_of_ib]
+
+    @staticmethod
+    def _add_user_credentials(command, username='', pwd=''):
+        if username:
+            command += f' --infobase-user={username} --infobase-pwd={pwd}'
+        return command
 
     def create_infobase(self, ib_name, sql_server=''):
         """Create new infobase in cluster.
@@ -57,21 +131,22 @@ class Cluster:
             ib_name (str): infobase name
             sql_server (str): name of SQL server from settings file
         """
-        settings = self.settings['variables']['SQL_SERVERS']
+        settings = self.all_settings['variables']['SQL_SERVERS']
         if sql_server:
             db = settings[sql_server]
         else:
             db = settings[self.sql_server]
-        command = f'rac infobase' + \
-                  f' --cluster={self._cluster_id}' \
+
+        command = f'infobase --cluster={self._cluster_id}' \
                   f' create --create-database --name={ib_name}' \
                   f' --dbms={db["DBMS"]} --db-server={db["DB_HOST"]}' \
                   f' --db-user={db["DB_USER"]} --db-pwd={db["DB_PASSWORD"]}' \
                   f' --db-name={ib_name} --date-offset=2000 --security-level=1' \
                   f' --license-distribution=allow --locale=ru'
-        command = self._add_ras_host(command)
-        output = utils.run_command(f'Create infobase {ib_name} :', command)
-        infobase_id = self._process_output(output, '')[0]['infobase']
+
+        output = self._run_command(command, f'create infobase "{ib_name}"')
+        infobase_id = self._process_output(output)[0]['infobase']
+
         return infobase_id
 
     def drop_infobase(self, ib_name, username, pwd, mode=''):
@@ -86,14 +161,23 @@ class Cluster:
                     drop-database - delete database
         """
         infobase_id = self._get_infobase_id(ib_name)
-        command = f'rac infobase drop' \
-                  f' --infobase={infobase_id}'
+        command = f'infobase --cluster={self._cluster_id} drop --infobase={infobase_id}'
+
         if mode:
             self._check_value(mode, ['clear-database', 'drop-database'])
             command += f'--{mode}'
+
         command = self._add_user_credentials(command, username, pwd)
-        command = self._add_ras_host(command)
-        utils.run_command(f'drop infobase {ib_name} ', command)
+
+        self._run_command(command, f'drop infobase "{ib_name}"')
+
+    def _set_option(self, ib_name, option, mode, username='', pwd=''):
+        ib_id = self._get_infobase_id(ib_name)
+
+        command = f'infobase --cluster={self._cluster_id} update --infobase={ib_id} --{option}={mode}'
+        command = self._add_user_credentials(command, username, pwd)
+
+        self._run_command(command, f'setting "{option}" to "{mode}" of infobase "{ib_name}"')
 
     def set_session_lock(self, ib_name, mode, username, pwd):
         if self._check_value(mode, ['on', 'off']):
@@ -105,95 +189,33 @@ class Cluster:
             return
         self._set_option(ib_name, option='scheduled-jobs-deny', mode=mode, username=username, pwd=pwd)
 
-    def _get_list_of_infobases(self):
-        command = f'rac infobase summary list --cluster={self._cluster_id}'
-        command = self._add_ras_host(command)
-        output = utils.run_command('get list of infobases ', command)
-        list_of_ib = self._process_output(output, '')
-        return [{i['name']: i['infobase']} for i in list_of_ib]
-
-    def _get_cluster_id(self):
-        command = 'rac.exe cluster list'
-        command = self._add_ras_host(command)
-        output = utils.run_command('get cluster id:', command)
-
-        if self.cluster_host and self.cluster_port:
-            output_processed = self._process_output(output, '')
-
-            for output_processed_item in output_processed:
-                if output_processed_item['host'] == self.cluster_host \
-                        and output_processed_item['port'] == str(self.cluster_port):
-                    return output_processed_item['cluster']
-            else:
-                return None
-        else:
-            return self._process_output(output, '')[0]['cluster']
-
-    def _set_option(self, ib_name, option, mode, username='', pwd=''):
-        ib_id = self._get_infobase_id(ib_name)
-        command = f'rac infobase update' \
-                  f' --cluster={self._cluster_id}' \
-                  f' --infobase={ib_id}' \
-                  f' --{option}={mode}'
-        command = self._add_user_credentials(command, username, pwd)
-        command = self._add_ras_host(command)
-        utils.run_command(f'Setting {option} to {mode}', command)
-
-    def _get_infobase_id(self, ib_name):
-        try:
-            ib_id = utils.get_value_by_key_in_dicts_list(ib_name, self.infobases)
-        except Exception:
-            raise KeyError(f'Could not find the infobase: "{ib_name}"')
-        return ib_id
-
-    def _add_ras_host(self, command):
-        return f'{command} {self.server_name}:{self.ras_port}'
-
     def _get_sessions_list(self, ib_name):
         ib_id = self._get_infobase_id(ib_name)
         if ib_id is None:
             return
-        command = f'rac session list ' \
-                  f'--cluster={self._cluster_id} ' \
-                  f'--infobase={ib_id}'
-        command = self._add_ras_host(command)
-        output = utils.run_command(f'get sessions list of infobase {ib_name}:', command)
-        session_list = self._process_output(output, 'data-separation')
+
+        command = f'session --cluster={self._cluster_id} list --infobase={ib_id}'
+
+        output = self._run_command(command, f'get session list of infobase "{ib_name}"')
+        session_list = self._process_output(output)
+
         return session_list
 
-    @staticmethod
-    def _check_value(value, valid_values):
-        """Checks the value for validity.
+    def terminate_sessions(self, ib_name, session_number=''):
+        """Terminate infobase sessions.
         Args:
-            value (str): value for check
-            valid_values (list): list of valid values
+            ib_name (str): infobase name
+            session_number (str, int): session number, if not set, then all sessions terminate
         """
-        if value not in valid_values:
-            raise ValueError(f'Invalid value {value}. Available values: {valid_values}')
+        sessions = self._get_sessions_list(ib_name)
+        for session in sessions:
+            if session['session-id'] == str(session_number) or not session_number:
+                command = f'session --cluster={self._cluster_id} terminate --session={session["session"]}'
 
-    @staticmethod
-    def _add_user_credentials(command, username='', pwd=''):
-        if username:
-            command += f' --infobase-user={username} --infobase-pwd={pwd}'
-        return command
-
-    @staticmethod
-    def _process_output(output, separator):
-        objects = []
-        is_new_object = True
-        for i in output:
-            if not i and i != separator:
-                continue
-            if (i.startswith(separator) and bool(separator)) or separator == i:
-                is_new_object = True
-                continue
-            if is_new_object:
-                obj = {}
-                objects.append(obj)
-                is_new_object = False
-            key, value = i.replace(' ', '').split(':', maxsplit=1)
-            obj[key] = value
-        return objects
+                try:
+                    self._run_command(command, f'terminate sessions of infobase "{ib_name}"')
+                except Exception as e:
+                    print(f'failed to end session: {e}')
 
 
 class ClusterError(Exception):
