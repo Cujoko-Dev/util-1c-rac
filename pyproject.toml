@@ -19,7 +19,7 @@ classifiers=[
     'Programming Language :: Python :: 3.9',
 ]
 dependencies = [
-    "commons-1c>=3.6.1",
+    "commons-1c>=3.6.2",
     "pyyaml>=6.0",
 ]
 description = "Utils for 1C:Enterprise Remote Administration Client"
