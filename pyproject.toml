@@ -1,7 +1,6 @@
 [tool.pdm]
 [tool.pdm.dev-dependencies]
 dev = [
-    "-e file:///D:/Dev/Python/commons-1c#egg=commons-1c",
 ]
 
 [project]
