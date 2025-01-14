@@ -235,7 +235,7 @@ class Cluster:
                     self._run_command(
                         command, f'terminate sessions of infobase "{ib_name}"'
                     )
-                except Exception as e:
+                except Exception as exc:
                     print(f"failed to end session: {e}")
 
 
