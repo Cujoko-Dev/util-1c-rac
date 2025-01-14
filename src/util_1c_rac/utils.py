@@ -19,13 +19,13 @@ def read_settings():
 
 
 def get_value_by_key_in_dicts_list(key, list_of_dictionaries):
-    """Вернуть значение по ключу в списке словарей"""
+    """Получить значение по ключу в списке словарей"""
 
     return [element[key] for element in list_of_dictionaries if element.get(key)][0]
 
 
 def get_cluster_by_version(version):
-    """Вернуть кластер по версии"""
+    """Получить кластер по версии"""
 
     clusters = read_settings()["variables"]["CLUSTERS"]
     for cluster in clusters:
