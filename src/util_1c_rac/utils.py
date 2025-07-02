@@ -1,6 +1,7 @@
 import subprocess as sub
 
 import yaml
+from loguru import logger
 
 
 def read_settings():
@@ -10,7 +11,7 @@ def read_settings():
         try:
             return yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            logger.critical(exc)
 
 
 def get_value_by_key_in_dicts_list(key, list_of_dictionaries):
@@ -22,7 +23,12 @@ def get_value_by_key_in_dicts_list(key, list_of_dictionaries):
 def get_cluster_by_version(version):
     """Получить кластер по версии"""
 
-    clusters = read_settings()["variables"]["CLUSTERS"]
+    settings = read_settings()
+
+    if settings is None:
+        raise AttributeError("settings is None")
+
+    clusters = settings["variables"]["CLUSTERS"]
     for cluster in clusters:
         if clusters[cluster]["version"] == version:
             return cluster

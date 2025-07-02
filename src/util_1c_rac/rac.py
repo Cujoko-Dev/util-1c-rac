@@ -1,7 +1,9 @@
 import platform
+import time
 from pathlib import Path
 
 from commons_1c import platform_
+from loguru import logger
 
 from . import utils
 
@@ -12,14 +14,14 @@ class Cluster:
         host: str = platform.node(),
         port: int = 1541,
         name=None,
-        all_settings: dict = None,
+        all_settings: dict | None = None,
     ):
         """Class to manage cluster infobase and cluster settings.
         Args:
-            host (str): cluster host
-            port (int): cluster port
-            name (str): cluster name
-            all_settings (dict) = dict with data from settings file
+            - host         (str)  -- cluster host
+            - port         (int)  -- cluster port
+            - name         (str)  -- cluster name
+            - all_settings (dict) -- dict with data from settings file
         """
         if port and port:
             self.host = host
@@ -108,8 +110,8 @@ class Cluster:
     def _check_value(value, valid_values):
         """Checks the value for validity.
         Args:
-            value (str): value for check
-            valid_values (list): list of valid values
+            - value        (str)  -- value for check
+            - valid_values (list) -- list of valid values
         """
         if value not in valid_values:
             raise ValueError(f"Invalid value {value}. Available values: {valid_values}")
@@ -165,13 +167,13 @@ class Cluster:
     def drop_infobase(self, ib_name, username, pwd, mode=""):
         """Drop infobase.
         Args:
-            ib_name (str): infobase name
-            username (str): infobase administrator username
-            pwd (str): infobase administrator password
-            mode (str): mode of deleting database
+            - ib_name  (str) -- infobase name
+            - username (str) -- infobase administrator username
+            - pwd      (str) -- infobase administrator password
+            - mode     (str) -- mode of deleting database
                 available value:
-                    clear-database - clear database
-                    drop-database - delete database
+                    clear-database -- clear database
+                    drop-database  -- delete database
         """
         infobase_id = self._get_infobase_id(ib_name)
         command = f"infobase --cluster={self._cluster_id} drop --infobase={infobase_id}"
@@ -194,22 +196,29 @@ class Cluster:
             command, f'setting "{option}" to "{mode}" of infobase "{ib_name}"'
         )
 
-    def set_session_lock(self, ib_name, mode, username, pwd):
-        if self._check_value(mode, ["on", "off"]):
-            return
-        self._set_option(
-            ib_name, option="sessions-deny", mode=mode, username=username, pwd=pwd
-        )
-
     def set_schedule_jobs_lock(self, ib_name, mode, username, pwd):
         if self._check_value(mode, ["on", "off"]):
             return
+
         self._set_option(
             ib_name, option="scheduled-jobs-deny", mode=mode, username=username, pwd=pwd
         )
 
+        time.sleep(1)
+
+    def set_session_lock(self, ib_name, mode, username, pwd):
+        if self._check_value(mode, ["on", "off"]):
+            return
+
+        self._set_option(
+            ib_name, option="sessions-deny", mode=mode, username=username, pwd=pwd
+        )
+
+        time.sleep(1)
+
     def _get_sessions_list(self, ib_name):
         ib_id = self._get_infobase_id(ib_name)
+
         if ib_id is None:
             return
 
@@ -223,10 +232,14 @@ class Cluster:
     def terminate_sessions(self, ib_name, session_number=""):
         """Terminate infobase sessions.
         Args:
-            ib_name (str): infobase name
-            session_number (str, int): session number, if not set, then all sessions terminate
+            - ib_name        (str)      -- infobase name
+            - session_number (str, int) -- session number, if not set, then all sessions terminate
         """
         sessions = self._get_sessions_list(ib_name)
+
+        if sessions is None:
+            raise AttributeError("sessions is None")
+
         for session in sessions:
             if session["session-id"] == str(session_number) or not session_number:
                 command = f'session --cluster={self._cluster_id} terminate --session={session["session"]}'
@@ -236,7 +249,9 @@ class Cluster:
                         command, f'terminate sessions of infobase "{ib_name}"'
                     )
                 except Exception as exc:
-                    print(f"failed to end session: {e}")
+                    logger.critical(f"failed to end session: {exc}")
+
+        time.sleep(3)
 
 
 class ClusterError(Exception):
