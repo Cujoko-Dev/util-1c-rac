@@ -8,6 +8,10 @@ from loguru import logger
 from . import utils
 
 
+class InfobaseNotFound(Exception):
+    pass
+
+
 class Cluster:
     def __init__(
         self,
@@ -116,11 +120,18 @@ class Cluster:
         if value not in valid_values:
             raise ValueError(f"Invalid value {value}. Available values: {valid_values}")
 
+    def infobase_exists(self, ib_name):
+        try:
+            ib_id = utils.get_value_by_key_in_dicts_list(ib_name, self.infobases)
+        except Exception:
+            return False
+        return True
+
     def _get_infobase_id(self, ib_name):
         try:
             ib_id = utils.get_value_by_key_in_dicts_list(ib_name, self.infobases)
         except Exception:
-            raise KeyError(f'Could not find the infobase: "{ib_name}"')
+            raise InfobaseNotFound(f'Could not find the infobase: "{ib_name}"')
         return ib_id
 
     def _get_list_of_infobases(self):

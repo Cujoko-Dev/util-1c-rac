@@ -29,7 +29,7 @@ license = {text = "MIT"}
 name = "util-1c-rac"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.3.0"
+version = "0.4.0"
 
 [project.urls]
 repository = "https://github.com/Cujoko-Dev/util-1c-rac"
