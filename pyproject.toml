@@ -12,6 +12,7 @@ classifiers=[
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Natural Language :: Russian",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.11",
@@ -21,7 +22,7 @@ classifiers=[
 ]
 dependencies = [
     "commons-1c>=3.6.2,<4.0.0",
-    "loguru>=0.7.3",
+    "loguru>=0.6.0",
     "pyyaml>=6.0",
 ]
 description = "Utils for 1C:Enterprise Remote Administration Client"
@@ -34,3 +35,4 @@ version = "0.4.0"
 [project.urls]
 repository = "https://github.com/Cujoko-Dev/util-1c-rac"
 
+[tool.pdm]
