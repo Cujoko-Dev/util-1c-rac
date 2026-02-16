@@ -27,7 +27,7 @@ class Cluster:
             - name         (str)  -- cluster name
             - all_settings (dict) -- dict with data from settings file
         """
-        if port and port:
+        if host and port:
             self.host = host
             self.port = port
 
