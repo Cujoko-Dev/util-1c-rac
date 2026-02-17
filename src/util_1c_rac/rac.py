@@ -17,33 +17,42 @@ class Cluster:
         self,
         host: str = platform.node(),
         port: int = 1541,
-        name=None,
+        ras_host: str = platform.node(),
+        ras_port: int = 1545,
+        rac_file_fullpath: Path | None = None,
+        cluster_name: str = "",
         all_settings: dict | None = None,
     ):
         """Class to manage cluster infobase and cluster settings.
         Args:
-            - host         (str)  -- cluster host
-            - port         (int)  -- cluster port
-            - name         (str)  -- cluster name
-            - all_settings (dict) -- dict with data from settings file
+            - host         (str)       -- cluster host
+            - port         (int)       -- cluster port
+            - ras_host     (str)       -- RAS host
+            - ras_port     (int)       -- RAS port
+            - rac_file_fullpath (Path) -- full path to rac.exe file
+            - cluster_name (str)       -- cluster name
+            - all_settings (dict)      -- dict with data from settings file
         """
         if host and port:
             self.host = host
             self.port = port
 
-            self.ras_host = "localhost"  # todo
-            self.ras_port = 1545  # todo
+            self.ras_host = ras_host
+            self.ras_port = ras_port
 
-            self.rac_path = platform_.get_last_rac_exe_file_fullpath()
-        elif name and all_settings:
+            if rac_file_fullpath is None:
+                self.rac_file_fullpath = platform_.get_last_rac_exe_file_fullpath()
+            else:
+                self.rac_file_fullpath = rac_file_fullpath
+        elif cluster_name and all_settings:
             self.all_settings = all_settings
 
-            settings = all_settings["variables"]["CLUSTERS"][name.upper()]
+            settings = all_settings["variables"]["CLUSTERS"][cluster_name.upper()]
 
             self.ras_host = settings["host"]
             self.ras_port = settings["ras_port"]
 
-            self.rac_path = Path(
+            self.rac_file_fullpath = Path(
                 settings["path"], settings["version"], "bin", "rac.exe"
             )
 
@@ -78,7 +87,10 @@ class Cluster:
         self.infobases = self._get_list_of_infobases()
 
     def _run_command(self, command: str, desc: str):
-        commands = [f'"{self.rac_path}" {self.ras_host}:{self.ras_port}', command]
+        commands = [
+            f'"{self.rac_file_fullpath}" {self.ras_host}:{self.ras_port}',
+            command,
+        ]
 
         output = utils.run_command(" ".join(commands), desc)
 
@@ -156,6 +168,7 @@ class Cluster:
             sql_server (str): name of SQL server from settings file
         """
         settings = self.all_settings["variables"]["SQL_SERVERS"]
+
         if sql_server:
             db = settings[sql_server]
         else:
