@@ -35,6 +35,9 @@ class Cluster:
         self.ras_host = ras_host
         self.ras_port = ras_port
 
+        if not rac_file_fullpath.exists():
+            raise FileNotFoundError(f"RAC file not found: {rac_file_fullpath}")
+
         self.rac_file_fullpath = rac_file_fullpath
 
         self._cluster_id = None
