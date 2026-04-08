@@ -29,6 +29,9 @@ version = "0.1.0"
 [project.urls]
 repository = "https://github.com/Cujoko-Dev/util-1c-rac"
 
+[tool.pdm.build]
+package-dir = "../src"
+
 [tool.pdm.dev-dependencies]
 dev = [
     "-e file:///C:/Dev/Python/commons-1c/.dev#egg=commons-1c",
@@ -39,5 +42,5 @@ test = "pytest"
 
 [tool.pytest.ini_options]
 addopts = "-q"
-pythonpath = ["src"]
-testpaths = ["tests"]
+pythonpath = ["../src"]
+testpaths = ["../tests"]
