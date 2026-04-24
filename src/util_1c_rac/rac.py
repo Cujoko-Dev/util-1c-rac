@@ -19,7 +19,7 @@ class Cluster:
         ras_host: str = platform.node(),
         ras_port: int = 1545,
         *,
-        rac_file_fullpath: Path,
+        rac_file_fullpath: Path | None,
     ):
         """Class to manage cluster infobase and cluster settings.
         Args:
@@ -35,7 +35,7 @@ class Cluster:
         self.ras_host = ras_host
         self.ras_port = ras_port
 
-        if not rac_file_fullpath.exists():
+        if rac_file_fullpath is None or not rac_file_fullpath.exists():
             raise FileNotFoundError(f"RAC file not found: {rac_file_fullpath}")
 
         self.rac_file_fullpath = rac_file_fullpath
