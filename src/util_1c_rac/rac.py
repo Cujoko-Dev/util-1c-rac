@@ -83,10 +83,10 @@ class Cluster:
                 obj = {}
                 objs.append(obj)
 
-            line_splitted = line.split(":", maxsplit=1)
+            line_split = line.split(":", maxsplit=1)
 
-            if len(line_splitted) >= 2:
-                key, value = [x.strip() for x in line_splitted]
+            if len(line_split) >= 2:
+                key, value = [x.strip() for x in line_split]
 
                 obj[key] = value
 
