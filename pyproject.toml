@@ -30,11 +30,3 @@ version = "0.6.3"
 
 [project.urls]
 repository = "https://github.com/Cujoko-Dev/util-1c-rac"
-
-[tool.pdm.scripts]
-test = "pytest"
-
-[tool.pytest.ini_options]
-addopts = "-q"
-pythonpath = ["src"]
-testpaths = ["tests"]
