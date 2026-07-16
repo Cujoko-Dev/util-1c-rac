@@ -22,11 +22,16 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 description = "Utils for 1C:Enterprise Remote Administration Client"
+dynamic = ["version"]
 license = {text = "MIT"}
 name = "util-1c-rac"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.6.4"
 
 [project.urls]
 repository = "https://github.com/Cujoko-Dev/util-1c-rac"
+
+[tool.pdm.version]
+path = "src/util_1c_rac/_version.py"
+pattern = '^__version__\s*=\s*"([^"]+)"'
+source = "file"
