@@ -27,7 +27,7 @@ name = "util-1c-rac"
 requires-python = ">=3.10"
 
 [project.urls]
-repository = "https://github.com/Cujoko-Dev/util-1c-rac"
+repository = "https://github.com/cujoko-dev/util-1c-rac"
 
 [tool.pdm.build]
 package-dir = "../src"
