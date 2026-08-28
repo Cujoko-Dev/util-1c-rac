@@ -2,6 +2,12 @@
 build-backend = "pdm.backend"
 requires = ["pdm-backend"]
 
+[dependency-groups]
+dev = [
+    "-e file:///${PROJECT_ROOT}/../../commons/.dev#egg=cjk-commons",
+    "-e file:///${PROJECT_ROOT}/../../commons-1c/.dev#egg=commons-1c",
+]
+
 [project]
 authors = [
     {name = "Cujoko", email = "cujoko@gmail.com"},
@@ -31,12 +37,6 @@ repository = "https://github.com/cujoko-dev/util-1c-rac"
 
 [tool.pdm.build]
 package-dir = "../src"
-
-[tool.pdm.dev-dependencies]
-dev = [
-    "-e file:///${PROJECT_ROOT}/../../commons/.dev#egg=cjk-commons",
-    "-e file:///${PROJECT_ROOT}/../../commons-1c/.dev#egg=commons-1c",
-]
 
 [tool.pdm.scripts]
 test = { cmd = "pytest", working_dir = ".." }
